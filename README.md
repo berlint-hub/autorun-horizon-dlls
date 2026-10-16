@@ -1,17 +1,61 @@
-# autorun-horizon-dlls
+<p align="center">
+  <img src="documentation/logo-image.png" alt="Autorun logo" width="220">
+</p>
 
-The Windows side of [Autorun](https://github.com/autorunhq/autorun), the
-Windows compatibility layer for the Nintendo Switch: every module in
-`system32` (ARM64X) and `syswow64` (i386), built from Autorun's Wine, with
-FEX's CPU modules and the bundled DXVK and VKD3D-Proton. Autorun downloads
-them itself; nothing here needs to be copied by hand.
+<h1 align="center">Autorun Windows DLLs</h1>
 
-**Without a network:** download this repository (Code, Download ZIP) and copy
+<p align="center">
+  The Windows side of <a href="https://github.com/autorunhq/autorun">Autorun</a>, built from Wine for the Nintendo Switch.<br>
+  <sub>Downloaded and kept up to date by Autorun itself.</sub>
+</p>
+
+Every module a Windows game expects to find in `system32` (ARM64X) and
+`syswow64` (i386), built from Autorun's Wine, with FEX's CPU modules and the
+bundled DXVK and VKD3D-Proton. Autorun downloads what it needs from here and
+keeps it up to date; nothing here needs to be copied by hand.
+
+- **Built from source, none of it Microsoft's.** Every Wine file is Wine's own
+  implementation of Windows, some with changes for the Switch. `NOTICE.md` says
+  which, and where each file's source is.
+- **Only what changed is downloaded.** Each file has a version, a size and a
+  SHA-256 in the manifest, and a card fetches only files whose bytes changed.
+- **Matched to the runtime.** A file that needs something a card's Autorun
+  doesn't have is left alone until that Autorun is updated.
+
+**Without a network:** download this repository (Code › Download ZIP) and copy
 its `switch` folder to the root of the SD card, merging folders.
 
-Every Wine file is built from Wine, some with changes for Horizon; `NOTICE.md`
-says which, and where their source is. None of it is Microsoft's.
-The shared compatibility payload also includes standalone XLiveLess and PhysX.
+## Not a piracy or circumvention tool
+
+These files let legitimate Windows programs run on the Switch. They contain no
+Windows files, no Microsoft code and no game's files, and nothing here removes
+or gets around a game's copy protection, DRM or license checks: the DLLs
+implement Windows' programming interfaces, which a game calls the same way on
+a PC.
+
+Besides Wine, FEX, DXVK and VKD3D-Proton, the compatibility payload carries
+two runtimes games load by name:
+
+- **NVIDIA PhysX** system software (9.13.0604), unmodified, for games built on
+  PhysX 2.x, which look for it as a PC's PhysX installer would have left it.
+- **XLiveLess**, open source, in place of the library of **Games for Windows
+  Live**. Microsoft shut that service down; its client can't be installed any
+  more, and couldn't run beside a game on Autorun anyway, because Autorun runs
+  Wine as a single process on the Switch (one program at a time; see
+  [Autorun's README](https://github.com/autorunhq/autorun#not-a-piracy-or-circumvention-tool)).
+  XLiveLess lets a game that was built on it start offline. It stands in for a
+  service that no longer exists, not for a store that sells the game.
+
+`NOTICE.md` and each file's manifest entry name its source and license;
+anyone passing these files on has to keep to those licenses (Wine's is the
+LGPL) and say where the source is.
+
+> **No support for pirated, cracked or modified games, or for third-party
+> bundles** that ship a game already packed with Autorun and these files. They
+> aren't made by this project and aren't supported or endorsed, and issues about
+> them are closed. Get Autorun from its
+> [releases](https://github.com/autorunhq/autorun/releases), and let it
+> download the files it needs from here.
 
 ## Layout
 
