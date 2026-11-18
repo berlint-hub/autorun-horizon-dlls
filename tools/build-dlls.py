@@ -110,8 +110,8 @@ CATEGORIES = [
     ('drivers', 'Kernel-mode drivers: the device, bus, file system and network stacks under Windows',
      r'.*\.sys'),
     ('core', 'The NT layer, the Win32 base and the WoW64 and CPU emulation layers every program runs on',
-     r'(ntdll|wow64|wow64win|wow64cpu|win32u|winebox64|winebox64ec|xtajit|xtajit64|libarm64ecfex|'
-     r'libwow64fex|apisetschema|kernel32|kernelbase|user32|gdi32|advapi32|sechost|rpcrt4|imm32|'
+     r'(ntdll|wow64|wow64win|wow64cpu|win32u|winebox64|winebox64ec|xtajit|xtajit64|libarm64ecfex(-\w+)?|'
+     r'libwow64fex(-\w+)?|apisetschema|kernel32|kernelbase|user32|gdi32|advapi32|sechost|rpcrt4|imm32|'
      r'version|psapi|dbghelp|imagehlp|cfgmgr32|setupapi|powrprof|userenv|profapi|lz32|toolhelp|'
      r'ktmw32|fltlib|virtdisk|wofutil)\.dll'),
     ('directx-graphics', 'Direct3D 1 to 12, DirectDraw, DXGI, Direct2D, the D3DX libraries and the shader compilers',
@@ -373,12 +373,45 @@ def build_audio_drivers(scratch):
         built.append(dict(file=driver, name='winenxaudio.drv', path=f'drive_c/windows/{directory}', arch=arch))
     return built
 
+# The tuned FEX variant built beside the pinned release for A/B performance
+# comparisons on the Switch's Tegra X1 CPU, from the same ABI and runtime: only
+# the CPU back end differs (Autorun's horizon-wine/fex/variants-build.md). The
+# runtime loads it when sdmc:/switch/wine/fex-variant.txt names its suffix.
+FEX_VARIANT = {
+    'WINE_NX_FEX_REMOTE': 'https://github.com/berlint-hub/FEX.git',
+    'WINE_NX_FEX_REVISION': 'b8674872b42550ec95faf48f860b23246dd34716',
+    'WINE_NX_FEX_PATCH': 'tegra-x1-fixes.patch',  # the Horizon patch is in the tree; the port's fixes are not
+    'WINE_NX_FEX_TUNE_TEGRA_X1': 'ON',
+    'WINE_NX_FEX_SUFFIX': '-opt',
+    'WINE_NX_FEX_VERSION': 'FEX-2610',
+}
+
+
 def build_fex(scratch):
-    run('sh', tools / 'build-fex.sh')
-    payload = horizon_wine / 'toolchains/build-fex-2609-horizon/payload'
+    return build_fex_variant(scratch, {})
+
+
+def build_fex_opt(scratch):
+    return build_fex_variant(scratch, FEX_VARIANT)
+
+
+def build_fex_variant(scratch, variant):
+    held = {key: env.get(key) for key in variant}
+    env.update(variant)
+    try:
+        run('sh', tools / 'build-fex.sh')
+    finally:
+        for key, value in held.items():
+            if value is None:
+                env.pop(key, None)
+            else:
+                env[key] = value
+    suffix = variant.get('WINE_NX_FEX_SUFFIX', '')
+    payload = horizon_wine / f'toolchains/build-fex-2609{suffix}-horizon/payload'
     manifest = json.loads((payload / 'fex-manifest.json').read_text())
     return [dict(file=payload / name, name=name, path='drive_c/windows/system32',
-                 arch='arm64ec' if 'arm64ec' in name else 'aarch64') for name in ('libarm64ecfex.dll', 'libwow64fex.dll')] + \
+                 arch='arm64ec' if 'arm64ec' in name else 'aarch64')
+            for name in (f'libarm64ecfex{suffix}.dll', f'libwow64fex{suffix}.dll')] + \
         [dict(license=(payload / 'licenses' / name, Path(name).stem)) for name in manifest['licenses']]
 
 def build_dxvk64(scratch):
@@ -468,6 +501,9 @@ EXTRA = [
          identity=' '.join(AUDIO_FLAGS), autorun_inputs=['horizon-wine/source/audio_driver.c']),
     dict(key='fex', build=build_fex, category='core', origin='fex', license='MIT',
          sources=['horizon-wine/fex'], identity='fex',
+         autorun_inputs=['horizon-wine/fex'], repo_inputs=['tools/build-fex.sh', 'tools/fex_payload.py']),
+    dict(key='fex-opt', build=build_fex_opt, category='core', origin='fex', license='MIT',
+         sources=['horizon-wine/fex'], identity='fex-opt tegra_x1 b8674872b',
          autorun_inputs=['horizon-wine/fex'], repo_inputs=['tools/build-fex.sh', 'tools/fex_payload.py']),
     dict(key='dxvk64', build=build_dxvk64, category='translation-layers', origin='dxvk', license='Zlib',
          sources=[], identity='dxvk64', repo_inputs=['tools/build-dxvk.py', 'tools/dxvk_payload.py']),
@@ -911,6 +947,8 @@ built by `tools/build-fex.sh`, `tools/build-dxvk.py` and `tools/build-vkd3d.py`
 from their pinned releases; FEX's Horizon patch and the ABI it shares with the
 runtime stay in Autorun's `horizon-wine/fex`, and the headers a Wine module
 shares with the runtime are listed in `horizon-wine/runtime-interfaces.json`.
+`fex-opt` builds a tuned FEX variant beside the pinned one, from `FEX_VARIANT`,
+for the runtime's A/B performance comparison on the Switch.
 Commit and push here, then commit the new `horizon-dlls` in Autorun, so each
 Autorun commit names the DLLs that go with it.
 '''
