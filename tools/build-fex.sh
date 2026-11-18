@@ -9,8 +9,9 @@ horizon_wine="$autorun/horizon-wine"
 source_dir="${WINE_NX_FEX_DIR:-$horizon_wine/toolchains/fex-2611}"
 build="${WINE_NX_FEX_BUILD_DIR:-$horizon_wine/toolchains/build-fex-2611-horizon}"
 wow64_build="$build-wow64"
-# FEX-2611.1, with its Horizon port (horizon-2611.patch). Autorun's horizon.patch
-# is FEX-2609's, which Carafe's and the experimental builds stay on.
+# FEX-2611.1, with its Horizon port (horizon-2611.patch), as Carafe's and the
+# experimental builds (Autorun's carafe/dlls). Autorun's horizon.patch is
+# FEX-2609's, which Autorun's own DLL repository builds.
 revision=4f9c1f1e36443d22d7655477e34f51b95b685bf1
 patch="$horizon_wine/fex/horizon-2611.patch"
 
