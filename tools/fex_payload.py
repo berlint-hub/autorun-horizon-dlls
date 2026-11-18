@@ -7,8 +7,10 @@ import shutil
 import struct
 import subprocess
 
-VERSION = '2609'
-REVISION = '395b132f346b1a45def246d10c52245edba1ef02'
+VERSION = '2611.1'
+REVISION = '4f9c1f1e36443d22d7655477e34f51b95b685bf1'
+# Autorun's port of its Horizon patch to that release (horizon-wine/fex).
+PATCH = 'horizon-2611.patch'
 DLLS = {'libarm64ecfex.dll': 'arm64ec', 'libwow64fex.dll': 'arm64'}
 # The runtime side of the FEX ABI stays with the runtime, in Autorun.
 from autorun import horizon_wine as HORIZON_WINE
@@ -66,7 +68,7 @@ def validate_payload(directory):
     manifest = json.loads((directory / 'fex-manifest.json').read_text())
     if (manifest.get('version'), manifest.get('revision')) != (VERSION, REVISION):
         raise ValueError('FEX payload does not match the pinned release')
-    for key, file in (('patch_sha256', 'horizon.patch'), ('abi_sha256', 'unixlib.h'),
+    for key, file in (('patch_sha256', PATCH), ('abi_sha256', 'unixlib.h'),
                       ('jit_registry_sha256', 'jit_registry.h'),
                       ('code_storage_sha256', 'code_storage.h'),
                       ('cache_policy_sha256', 'cache_policy.h')):
@@ -121,7 +123,7 @@ def build_payload(source, arm64ec, wow64, output):
     softfloat = (source / 'External/SoftFloat-3e/include/SoftFloat-3e/softfloat.h').read_text()
     (licenses / 'FEX-SoftFloat.txt').write_text(softfloat.split('*/', 1)[0] + '*/\n')
     manifest = {'version': VERSION, 'revision': REVISION, 'modules': modules,
-                'patch_sha256': source_digest(HORIZON_WINE / 'fex/horizon.patch'),
+                'patch_sha256': source_digest(HORIZON_WINE / 'fex' / PATCH),
                 'abi_sha256': source_digest(HORIZON_WINE / 'fex/unixlib.h'),
                 'jit_registry_sha256': source_digest(HORIZON_WINE / 'fex/jit_registry.h'),
                 'code_storage_sha256': source_digest(HORIZON_WINE / 'fex/code_storage.h'),

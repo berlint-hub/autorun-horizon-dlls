@@ -375,7 +375,7 @@ def build_audio_drivers(scratch):
 
 def build_fex(scratch):
     run('sh', tools / 'build-fex.sh')
-    payload = horizon_wine / 'toolchains/build-fex-2609-horizon/payload'
+    payload = horizon_wine / 'toolchains/build-fex-2611-horizon/payload'
     manifest = json.loads((payload / 'fex-manifest.json').read_text())
     return [dict(file=payload / name, name=name, path='drive_c/windows/system32',
                  arch='arm64ec' if 'arm64ec' in name else 'aarch64') for name in ('libarm64ecfex.dll', 'libwow64fex.dll')] + \
@@ -467,7 +467,7 @@ EXTRA = [
          license=None, sources=['horizon-wine/source/audio_driver.c'],
          identity=' '.join(AUDIO_FLAGS), autorun_inputs=['horizon-wine/source/audio_driver.c']),
     dict(key='fex', build=build_fex, category='core', origin='fex', license='MIT',
-         sources=['horizon-wine/fex'], identity='fex',
+         sources=['horizon-wine/fex'], identity='fex 2611.1',
          autorun_inputs=['horizon-wine/fex'], repo_inputs=['tools/build-fex.sh', 'tools/fex_payload.py']),
     dict(key='dxvk64', build=build_dxvk64, category='translation-layers', origin='dxvk', license='Zlib',
          sources=[], identity='dxvk64', repo_inputs=['tools/build-dxvk.py', 'tools/dxvk_payload.py']),

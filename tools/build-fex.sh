@@ -6,11 +6,13 @@ here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 autorun="${AUTORUN:-$(git -C "$here" rev-parse --show-superproject-working-tree)}"
 [ -n "$autorun" ] || { echo "Not inside an Autorun checkout; set AUTORUN." >&2; exit 1; }
 horizon_wine="$autorun/horizon-wine"
-source_dir="${WINE_NX_FEX_DIR:-$horizon_wine/toolchains/fex-2609}"
-build="${WINE_NX_FEX_BUILD_DIR:-$horizon_wine/toolchains/build-fex-2609-horizon}"
+source_dir="${WINE_NX_FEX_DIR:-$horizon_wine/toolchains/fex-2611}"
+build="${WINE_NX_FEX_BUILD_DIR:-$horizon_wine/toolchains/build-fex-2611-horizon}"
 wow64_build="$build-wow64"
-revision=395b132f346b1a45def246d10c52245edba1ef02
-patch="$horizon_wine/fex/horizon.patch"
+# FEX-2611.1, with its Horizon port (horizon-2611.patch). Autorun's horizon.patch
+# is FEX-2609's, which Carafe's and the experimental builds stay on.
+revision=4f9c1f1e36443d22d7655477e34f51b95b685bf1
+patch="$horizon_wine/fex/horizon-2611.patch"
 
 if [ -n "${WINE_NX_LLVM_MINGW:-}" ]; then
     export PATH="$WINE_NX_LLVM_MINGW/bin:$PATH"
@@ -62,7 +64,7 @@ build_module()
     cmake -S "$source_dir" -B "$1" -G Ninja \
         -DCMAKE_TOOLCHAIN_FILE="$source_dir/Data/CMake/toolchain_mingw.cmake" \
         -DMINGW_TRIPLE="$2" -DCMAKE_BUILD_TYPE=Release \
-        -DOVERRIDE_VERSION=FEX-2609 -DOVERRIDE_HASH="$revision" \
+        -DOVERRIDE_VERSION=FEX-2611.1 -DOVERRIDE_HASH="$revision" \
         -DENABLE_LTO=OFF -DBUILD_TESTING=OFF -DBUILD_FEXCONFIG=OFF \
         -DENABLE_JEMALLOC_GLIBC_ALLOC=OFF -DENABLE_OFFLINE_TELEMETRY=OFF -DTUNE_CPU=none \
         -DFEX_HORIZON=ON -DFEX_HORIZON_ABI_DIR="$horizon_wine/fex"
