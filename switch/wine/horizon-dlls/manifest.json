@@ -9684,7 +9684,7 @@
      "horizon-wine/fex"
     ],
     "extra": "fex",
-    "pin": "c1bb1152404b50fb"
+    "pin": "09a521b4bd71db3a"
    },
    "license": "MIT",
    "requires": {
@@ -9717,7 +9717,7 @@
      "horizon-wine/fex"
     ],
     "extra": "fex",
-    "pin": "c1bb1152404b50fb"
+    "pin": "09a521b4bd71db3a"
    },
    "license": "MIT",
    "requires": {
