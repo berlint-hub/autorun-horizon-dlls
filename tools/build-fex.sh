@@ -1,13 +1,4 @@
 #!/bin/sh
-# Build FEX's ARM64EC and WoW64 CPU modules from a pinned FEX release and
-# Autorun's pinned Horizon patch and shared CPU ABI headers. The WINE_NX_FEX_*
-# inputs can be overridden to build a variant of the same modules beside the
-# pinned ones (Autorun's horizon-wine/fex/variants-build.md): _REMOTE and
-# _REVISION pick the source, _PATCH the patch applied on top of it (empty for
-# none), _TUNE_TEGRA_X1=ON the Switch CPU tuning, _VERSION the version the
-# modules report, and _SUFFIX names the modules and their payload directory.
-# The runtime loads a variant only when sdmc:/switch/wine/fex-variant.txt names
-# its suffix; without one this builds the pinned release as ever.
 set -eu
 here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 # FEX builds in the Autorun checkout around this repository (or $AUTORUN), whose
@@ -15,16 +6,14 @@ here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 autorun="${AUTORUN:-$(git -C "$here" rev-parse --show-superproject-working-tree)}"
 [ -n "$autorun" ] || { echo "Not inside an Autorun checkout; set AUTORUN." >&2; exit 1; }
 horizon_wine="$autorun/horizon-wine"
-source_dir="${WINE_NX_FEX_DIR:-$horizon_wine/toolchains/fex-2609${WINE_NX_FEX_SUFFIX:-}}"
-build="${WINE_NX_FEX_BUILD_DIR:-$horizon_wine/toolchains/build-fex-2609${WINE_NX_FEX_SUFFIX:-}-horizon}"
+source_dir="${WINE_NX_FEX_DIR:-$horizon_wine/toolchains/fex-2611}"
+build="${WINE_NX_FEX_BUILD_DIR:-$horizon_wine/toolchains/build-fex-2611-horizon}"
 wow64_build="$build-wow64"
-revision=${WINE_NX_FEX_REVISION:-395b132f346b1a45def246d10c52245edba1ef02}
-patch_name=${WINE_NX_FEX_PATCH-horizon.patch}
-patch=$horizon_wine/fex/$patch_name
-tegra=OFF
-if [ -n "${WINE_NX_FEX_TUNE_TEGRA_X1:-}" ] && [ "${WINE_NX_FEX_TUNE_TEGRA_X1}" != OFF ]; then
-    tegra=ON
-fi
+# FEX-2611.1, with its Horizon port (horizon-2611.patch), as Carafe's and the
+# experimental builds (Autorun's carafe/dlls). Autorun's horizon.patch is
+# FEX-2609's, which Autorun's own DLL repository builds.
+revision=4f9c1f1e36443d22d7655477e34f51b95b685bf1
+patch="$horizon_wine/fex/horizon-2611.patch"
 
 if [ -n "${WINE_NX_LLVM_MINGW:-}" ]; then
     export PATH="$WINE_NX_LLVM_MINGW/bin:$PATH"
@@ -39,7 +28,7 @@ if [ ! -d "$source_dir/.git" ]; then
     fi
     mkdir -p "$source_dir"
     git -C "$source_dir" init -q
-    git -C "$source_dir" remote add origin "${WINE_NX_FEX_REMOTE:-https://github.com/FEX-Emu/FEX.git}"
+    git -C "$source_dir" remote add origin https://github.com/FEX-Emu/FEX.git
     git -C "$source_dir" fetch --depth=1 origin "$revision"
     git -C "$source_dir" checkout -q --detach FETCH_HEAD
 fi
@@ -48,9 +37,7 @@ if [ "$(git -C "$source_dir" rev-parse HEAD)" != "$revision" ]; then
     exit 1
 fi
 # The patch last applied is kept beside the checkout, so a changed patch
-# replaces it; any other change to FEX is left alone. A variant source with the
-# Horizon work already in its tree builds with WINE_NX_FEX_PATCH= (no patch).
-if [ -n "$patch_name" ]; then
+# replaces it; any other change to FEX is left alone.
 applied="$source_dir/.git/horizon-applied.patch"
 if git -C "$source_dir" apply --reverse --check "$patch" 2>/dev/null; then
     :
@@ -68,7 +55,6 @@ else
     git -C "$source_dir" apply "$patch"
 fi
 cp "$patch" "$applied"
-fi
 git -C "$source_dir" submodule update --init --depth=1 \
     External/fmt External/xxhash External/range-v3 External/unordered_dense \
     External/rpmalloc Source/Common/cpp-optparse
@@ -79,21 +65,13 @@ build_module()
     cmake -S "$source_dir" -B "$1" -G Ninja \
         -DCMAKE_TOOLCHAIN_FILE="$source_dir/Data/CMake/toolchain_mingw.cmake" \
         -DMINGW_TRIPLE="$2" -DCMAKE_BUILD_TYPE=Release \
-        -DOVERRIDE_VERSION="${WINE_NX_FEX_VERSION:-FEX-2609}" -DOVERRIDE_HASH="$revision" \
+        -DOVERRIDE_VERSION=FEX-2611.1 -DOVERRIDE_HASH="$revision" \
         -DENABLE_LTO=OFF -DBUILD_TESTING=OFF -DBUILD_FEXCONFIG=OFF \
         -DENABLE_JEMALLOC_GLIBC_ALLOC=OFF -DENABLE_OFFLINE_TELEMETRY=OFF -DTUNE_CPU=none \
-        -DFEX_TUNE_TEGRA_X1=$tegra \
         -DFEX_HORIZON=ON -DFEX_HORIZON_ABI_DIR="$horizon_wine/fex"
     cmake --build "$1" --target "$3" -j "${WINE_NX_JOBS:-4}"
 }
 build_module "$build" arm64ec-w64-mingw32 arm64ecfex
 build_module "$wow64_build" aarch64-w64-mingw32 wow64fex
-set -- "$source_dir" "$build/Bin/libarm64ecfex.dll" \
+AUTORUN="$autorun" python3 "$here/fex_payload.py" "$source_dir" "$build/Bin/libarm64ecfex.dll" \
     "$wow64_build/Bin/libwow64fex.dll" "$build/payload"
-release=${WINE_NX_FEX_VERSION:-FEX-2609}
-set -- --version "${release#FEX-}" --revision "$revision" --patch "$patch_name" "$@"
-if [ -n "${WINE_NX_FEX_SUFFIX:-}" ]; then
-    # The = form: a suffix like -opt would read as a flag of its own.
-    set -- "--suffix=$WINE_NX_FEX_SUFFIX" "$@"
-fi
-AUTORUN="$autorun" "${PYTHON:-python3}" "$here/fex_payload.py" "$@"
