@@ -14,11 +14,6 @@ DLLS = {'libarm64ecfex.dll': 'arm64ec', 'libwow64fex.dll': 'arm64'}
 from autorun import horizon_wine as HORIZON_WINE
 
 
-def dll_names(suffix=''):
-    """The CPU module names a build makes: the pinned ones, or a variant's."""
-    return {f'libarm64ecfex{suffix}.dll': 'arm64ec', f'libwow64fex{suffix}.dll': 'arm64'}
-
-
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -66,29 +61,21 @@ def required_exports(architecture):
                           (HORIZON_WINE.parent / 'dlls/wow64/syscall.c').read_text()))
 
 
-def validate_payload(directory, suffix='', version=VERSION, revision=REVISION,
-                     patch='horizon.patch'):
+def validate_payload(directory):
     directory = Path(directory)
     manifest = json.loads((directory / 'fex-manifest.json').read_text())
-    if (manifest.get('version'), manifest.get('revision')) != (version, revision):
-        raise ValueError('FEX payload does not match its release')
-    checks = []
-    if patch:
-        checks.append(('patch_sha256', patch))
-    elif manifest.get('patch_sha256') is not None:
-        raise ValueError('FEX payload must not record a patch')
-    for key, file in (('abi_sha256', 'unixlib.h'),
+    if (manifest.get('version'), manifest.get('revision')) != (VERSION, REVISION):
+        raise ValueError('FEX payload does not match the pinned release')
+    for key, file in (('patch_sha256', 'horizon.patch'), ('abi_sha256', 'unixlib.h'),
                       ('jit_registry_sha256', 'jit_registry.h'),
                       ('code_storage_sha256', 'code_storage.h'),
                       ('cache_policy_sha256', 'cache_policy.h')):
-        checks.append((key, file))
-    for key, file in checks:
         if manifest.get(key) != source_digest(HORIZON_WINE / 'fex' / file):
             raise ValueError(f'FEX payload does not match {file}')
     modules = manifest.get('modules', {})
-    if set(modules) != set(dll_names(suffix)):
+    if set(modules) != set(DLLS):
         raise ValueError('FEX payload must contain both CPU modules')
-    for name, architecture in dll_names(suffix).items():
+    for name, architecture in DLLS.items():
         path = directory / name
         if modules[name] != {'architecture': architecture, 'sha256': digest(path)}:
             raise ValueError(f'FEX payload mismatch: {name}')
@@ -101,14 +88,12 @@ def validate_payload(directory, suffix='', version=VERSION, revision=REVISION,
     return manifest
 
 
-def build_payload(source, arm64ec, wow64, output, suffix='', version=VERSION,
-                  revision=REVISION, patch='horizon.patch'):
+def build_payload(source, arm64ec, wow64, output):
     source, output = map(Path, (source, output))
-    patch = patch or None
     llvm = Path(shutil.which('llvm-strip')).resolve().parents[1]
     output.mkdir(parents=True, exist_ok=True)
     modules = {}
-    for dll, (name, architecture) in zip((arm64ec, wow64), dll_names(suffix).items()):
+    for dll, (name, architecture) in zip((arm64ec, wow64), DLLS.items()):
         target = output / name
         subprocess.run([str(llvm / 'bin/llvm-strip'), '--strip-debug', '-o', str(target), str(dll)], check=True)
         validate_image(target, architecture)
@@ -135,34 +120,24 @@ def build_payload(source, arm64ec, wow64, output, suffix='', version=VERSION,
         shutil.copy2(path, licenses / name)
     softfloat = (source / 'External/SoftFloat-3e/include/SoftFloat-3e/softfloat.h').read_text()
     (licenses / 'FEX-SoftFloat.txt').write_text(softfloat.split('*/', 1)[0] + '*/\n')
-    manifest = {'version': version, 'revision': revision, 'modules': modules,
-                'patch_sha256': source_digest(HORIZON_WINE / 'fex' / patch) if patch else None,
+    manifest = {'version': VERSION, 'revision': REVISION, 'modules': modules,
+                'patch_sha256': source_digest(HORIZON_WINE / 'fex/horizon.patch'),
                 'abi_sha256': source_digest(HORIZON_WINE / 'fex/unixlib.h'),
                 'jit_registry_sha256': source_digest(HORIZON_WINE / 'fex/jit_registry.h'),
                 'code_storage_sha256': source_digest(HORIZON_WINE / 'fex/code_storage.h'),
                 'cache_policy_sha256': source_digest(HORIZON_WINE / 'fex/cache_policy.h'),
                 'licenses': {path.name: digest(path) for path in sorted(licenses.iterdir()) if path.is_file()}}
     (output / 'fex-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    validate_payload(output, suffix, version, revision, patch)
+    validate_payload(output)
     print(output)
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suffix', default='',
-                        help='name the CPU modules and payload with this, as a variant')
-    parser.add_argument('--version', default=VERSION,
-                        help='the FEX release the payload was built from')
-    parser.add_argument('--revision', default=REVISION,
-                        help='the FEX commit the payload was built from')
-    parser.add_argument('--patch', default='horizon.patch',
-                        help="the patch applied on top of it, in Autorun's fex/ (empty for none)")
     parser.add_argument('source', type=Path)
     parser.add_argument('arm64ec', type=Path)
     parser.add_argument('wow64', type=Path)
     parser.add_argument('output', type=Path)
     args = parser.parse_args()
-    build_payload(args.source, args.arm64ec, args.wow64, args.output,
-                  suffix=args.suffix, version=args.version,
-                  revision=args.revision, patch=args.patch)
+    build_payload(args.source, args.arm64ec, args.wow64, args.output)
