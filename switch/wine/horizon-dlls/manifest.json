@@ -9671,20 +9671,20 @@
    "path": "drive_c/windows/system32",
    "arch": "arm64ec",
    "category": "core",
-   "version": 4,
+   "version": 5,
    "size": 5582848,
-   "sha256": "2de3f42a60130c9144fbcde5224bc02498813be36bc25f3703bca454572eeea6",
+   "sha256": "8bbcc7dbbcd38b468c5e691067cbb43ece3abb4d84881ca7d39783047bc8993c",
    "url": "https://raw.githubusercontent.com/berlint-hub/autorun-horizon-dlls/main/switch/wine/drive_c/windows/system32/libarm64ecfex.dll",
    "source": {
     "repo": "berlint-hub/autorun",
-    "commit": "893d767f5d3a5cb3aef7f9d4cb351d3bb7db964b",
+    "commit": "2de70ee1",
     "origin": "fex",
     "modified": true,
     "paths": [
      "horizon-wine/fex"
     ],
     "extra": "fex",
-    "pin": "09a521b4bd71db3a"
+    "pin": "ea3475768cd90ce6"
    },
    "license": "MIT",
    "requires": {
@@ -9694,8 +9694,8 @@
    "classes": [],
    "compressed": {
     "encoding": "zlib",
-    "size": 1277367,
-    "sha256": "5edaf6b02f4f0442bdfa606528a6bb156288c4fc5748a1dae164986e15b917cb",
+    "size": 1277364,
+    "sha256": "833ec98b6f4554cee1018fad30d0f24ba2df40bcfca86f000f569b0290063be8",
     "url": "https://raw.githubusercontent.com/berlint-hub/autorun-horizon-dlls/main/compressed/switch/wine/drive_c/windows/system32/libarm64ecfex.dll.z"
    }
   },
@@ -9704,20 +9704,20 @@
    "path": "drive_c/windows/system32",
    "arch": "aarch64",
    "category": "core",
-   "version": 5,
+   "version": 6,
    "size": 5005312,
-   "sha256": "6446be593d795c0a99e155705fe2550092b374a48255354528ba78e640fc8b26",
+   "sha256": "2cc90f6f278e6bef5fd612287ef8f372858a3150edbf5662c0fd6e56621d2b57",
    "url": "https://raw.githubusercontent.com/berlint-hub/autorun-horizon-dlls/main/switch/wine/drive_c/windows/system32/libwow64fex.dll",
    "source": {
     "repo": "berlint-hub/autorun",
-    "commit": "893d767f5d3a5cb3aef7f9d4cb351d3bb7db964b",
+    "commit": "2de70ee1",
     "origin": "fex",
     "modified": true,
     "paths": [
      "horizon-wine/fex"
     ],
     "extra": "fex",
-    "pin": "09a521b4bd71db3a"
+    "pin": "ea3475768cd90ce6"
    },
    "license": "MIT",
    "requires": {
@@ -9727,8 +9727,8 @@
    "classes": [],
    "compressed": {
     "encoding": "zlib",
-    "size": 1147678,
-    "sha256": "d00277526cc55556429ea1a0413afed0396b429f5a34d2362b450b8bef4408b2",
+    "size": 1147676,
+    "sha256": "976d55495d4a56dafc285758f540db92d40f1d250133a6a4e546fcdc1a6ba3c6",
     "url": "https://raw.githubusercontent.com/berlint-hub/autorun-horizon-dlls/main/compressed/switch/wine/drive_c/windows/system32/libwow64fex.dll.z"
    }
   },
