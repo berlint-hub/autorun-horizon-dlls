@@ -24,6 +24,39 @@ def source_digest(path):
     return hashlib.sha256(Path(path).read_text().encode()).hexdigest()
 
 
+# Horizon does not let a program read the virtual counter or touch the virtual
+# timer (CNTKCTL_EL1 keeps EL0VCTEN and EL0VTEN off): such an instruction
+# traps as an illegal one. The physical counter, CNTPCT_EL0, is readable.
+# FEX-2611's RDRAND fallback for Windows seeded itself with
+# __builtin_readcyclecounter(), CNTVCT_EL0, when the module was loaded.
+# MRS and MSR of op0 3, op1 3, CRn 14: CRm 0 with op2 2 (CNTVCT_EL0) and
+# 6 (CNTVCTSS_EL0), and CRm 3 (CNTV_TVAL_EL0, CNTV_CTL_EL0, CNTV_CVAL_EL0).
+VIRTUAL_COUNTER_ACCESS = (
+    (0xFFDFFFE0, 0xD51BE040, 'CNTVCT_EL0'),
+    (0xFFDFFFE0, 0xD51BE0C0, 'CNTVCTSS_EL0'),
+    (0xFFDFFF00, 0xD51BE300, 'CNTV_*_EL0'),
+)
+
+
+def virtual_counter_accesses(data):
+    """Offsets of the instructions in a PE image's executable sections that
+    Horizon traps: accesses to the virtual counter and timer."""
+    offset = struct.unpack_from('<I', data, 0x3c)[0]
+    sections = offset + 24 + struct.unpack_from('<H', data, offset + 20)[0]
+    found = []
+    for section in range(struct.unpack_from('<H', data, offset + 6)[0]):
+        name, size, rva, raw_size, raw = struct.unpack_from('<8sIIII', data, sections + section * 40)
+        if not struct.unpack_from('<I', data, sections + section * 40 + 36)[0] & 0x20000000:
+            continue
+        end = min(raw + min(size, raw_size), len(data))
+        for at in range(raw, end - 3, 4):
+            word = struct.unpack_from('<I', data, at)[0]
+            for mask, value, register in VIRTUAL_COUNTER_ACCESS:
+                if word & mask == value:
+                    found.append((rva + at - raw, register))
+    return found
+
+
 def validate_image(path, architecture):
     data = Path(path).read_bytes()
     if len(data) < 64 or data[:2] != b'MZ':
@@ -41,6 +74,10 @@ def validate_image(path, architecture):
     section_count = struct.unpack_from('<H', data, offset + 6)[0]
     if sections + section_count * 40 > len(data):
         raise ValueError('Truncated FEX section table')
+    trapped = virtual_counter_accesses(data)
+    if trapped:
+        raise ValueError(f'{path} reads registers Horizon does not let a program read: ' +
+                         ', '.join(f'{register} at RVA {rva:#x}' for rva, register in trapped[:4]))
     if architecture != 'arm64ec':
         return
     load_rva = struct.unpack_from('<I', data, offset + 24 + 192)[0]
