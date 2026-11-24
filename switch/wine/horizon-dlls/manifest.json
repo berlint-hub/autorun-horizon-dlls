@@ -44172,13 +44172,13 @@
    "path": "drive_c/windows/syswow64",
    "arch": "i386",
    "category": "opengl-vulkan",
-   "version": 7,
-   "size": 2060288,
-   "sha256": "2171d5dd1984ebb272eeb8da9758cdd61eeb0898082b92c52543e39097f92afd",
+   "version": 8,
+   "size": 2154496,
+   "sha256": "39fc84436381081b8c905b797cd495df8b421ecc20cb2018a9715028f604e52c",
    "url": "https://raw.githubusercontent.com/berlint-hub/autorun-horizon-dlls/main/switch/wine/drive_c/windows/syswow64/opengl32.dll",
    "source": {
     "repo": "berlint-hub/autorun",
-    "commit": "36f5cbb39f7442d4e8017cfa9a17b2feb4b06735",
+    "commit": "bb98f061882ca361b7f40b0d3d4ad0322ac0e445",
     "origin": "wine",
     "modified": true,
     "paths": [
@@ -44196,8 +44196,8 @@
    "classes": [],
    "compressed": {
     "encoding": "zlib",
-    "size": 468192,
-    "sha256": "8b075797a92bb1c7a3d6e2878a857f5c9a9a8b1d87d57dd6507c938241176a95",
+    "size": 470108,
+    "sha256": "8e74da2c0d51968ca9a414cd14963a8ccd1f525391f1dd61b696b737824a14d1",
     "url": "https://raw.githubusercontent.com/berlint-hub/autorun-horizon-dlls/main/compressed/switch/wine/drive_c/windows/syswow64/opengl32.dll.z"
    }
   },
